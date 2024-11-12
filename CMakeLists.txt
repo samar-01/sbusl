@@ -9,18 +9,17 @@ set(CMAKE_C_STANDARD 11)
 
 pico_sdk_init()
 
-
 # Setup of eleccoder's version of Philip Heron's 'ax25beacon' project
 
-include(FetchContent)
-FetchContent_Declare(ax25_aprs_lib
-    GIT_REPOSITORY    "https://github.com/eleccoder/ax25-aprs-lib.git" 
-    GIT_SHALLOW       ON
-)
+# include(FetchContent)
+# FetchContent_Declare(ax25_aprs_lib
+#     GIT_REPOSITORY    "https://github.com/eleccoder/ax25-aprs-lib.git" 
+#     GIT_SHALLOW       ON
+# )
 
-FetchContent_MakeAvailable(ax25_aprs_lib)
+# FetchContent_MakeAvailable(ax25_aprs_lib)
 
-add_library(ax25_aprs_lib::ax25beacon ALIAS ax25beacon)
+# add_library(ax25_aprs_lib::ax25beacon ALIAS ax25beacon)
 
 
 # Compiler options
@@ -34,7 +33,11 @@ add_library(ax25_aprs_lib::ax25beacon ALIAS ax25beacon)
 set(TARGET_LIB_NAME aprs_pico)
 
 add_library(${TARGET_LIB_NAME}
-    src/aprs_pico.c)
+    src/aprs_pico.c
+	src/ax25.c
+	src/ax25beacon.c
+	# src/fx25_encode.c
+	)
 
 target_compile_options(${TARGET_LIB_NAME}
   PRIVATE "${APRS_PICO_COMPILE_WARN_OPTIONS}"
@@ -42,6 +45,7 @@ target_compile_options(${TARGET_LIB_NAME}
 
 target_include_directories(${TARGET_LIB_NAME} PUBLIC
     include
+	# src/Reed-Solomon
 )
 
 set_target_properties(${TARGET_LIB_NAME}
@@ -50,7 +54,7 @@ set_target_properties(${TARGET_LIB_NAME}
 )
   
 target_link_libraries(${TARGET_LIB_NAME}
-    ax25_aprs_lib::ax25beacon
+    # ax25_aprs_lib::ax25beacon
     pico_audio_pwm        
     pico_stdlib
 )
@@ -61,12 +65,16 @@ target_link_libraries(${TARGET_LIB_NAME}
 set(TARGET_DEMO_EXE_NAME aprs_pico_beacon_demo)
 
 add_executable(${TARGET_DEMO_EXE_NAME}
-    src/aprs_pico_beacon_demo.c
+    src/aprs_pico_beacon_demo.cpp
 )
 
 target_compile_options(${TARGET_DEMO_EXE_NAME}
   PRIVATE "${APRS_PICO_COMPILE_WARN_OPTIONS}"
 )
+
+
+pico_enable_stdio_usb(${TARGET_DEMO_EXE_NAME} 1)
+pico_enable_stdio_uart(${TARGET_DEMO_EXE_NAME} 0)
 
 target_include_directories(${TARGET_DEMO_EXE_NAME} PRIVATE
   include
@@ -77,33 +85,35 @@ pico_add_extra_outputs(${TARGET_DEMO_EXE_NAME})
 
 target_link_libraries(${TARGET_DEMO_EXE_NAME}
     ${TARGET_LIB_NAME}
-    ax25_aprs_lib::ax25beacon
+    # ax25_aprs_lib::ax25beacon
     pico_audio_pwm        
     pico_stdlib
+	hardware_i2c
+	hardware_spi
 )
 
 
-# ##### Configure the build of the TEST application #####
+# # ##### Configure the build of the TEST application #####
 
-set(TARGET_TEST_EXE_NAME aprs_pico_tone_test)
+# set(TARGET_TEST_EXE_NAME aprs_pico_tone_test)
 
-add_executable(${TARGET_TEST_EXE_NAME}
-    src/aprs_pico_tone_test.c
-)
+# add_executable(${TARGET_TEST_EXE_NAME}
+#     src/aprs_pico_tone_test.c
+# )
 
-target_compile_options(${TARGET_TEST_EXE_NAME}
-  PRIVATE "${APRS_PICO_COMPILE_WARN_OPTIONS}"
-)
+# target_compile_options(${TARGET_TEST_EXE_NAME}
+#   PRIVATE "${APRS_PICO_COMPILE_WARN_OPTIONS}"
+# )
 
-target_include_directories(${TARGET_TEST_EXE_NAME} PRIVATE
-  include
-)
+# target_include_directories(${TARGET_TEST_EXE_NAME} PRIVATE
+#   include
+# )
 
-# Create map/bin/hex file etc.
-pico_add_extra_outputs(${TARGET_TEST_EXE_NAME})
+# # Create map/bin/hex file etc.
+# pico_add_extra_outputs(${TARGET_TEST_EXE_NAME})
 
-target_link_libraries(${TARGET_TEST_EXE_NAME}
-    ${TARGET_LIB_NAME}
-    pico_audio_pwm        
-    pico_stdlib
-)
+# target_link_libraries(${TARGET_TEST_EXE_NAME}
+#     ${TARGET_LIB_NAME}
+#     pico_audio_pwm        
+#     pico_stdlib
+# )

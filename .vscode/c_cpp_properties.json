@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/arduino/**",
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/libraries/**",
+                "/home/samar/Documents/c/pico/pico-sdk/src/**",
+                "/home/samar/Documents/c/pico/pico-extras/src/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}

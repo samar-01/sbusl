@@ -1,0 +1,14 @@
+{
+	"files.associations": {
+		"*.cu": "cpp",
+		"aprs_pico.h": "c",
+		"ax25.h": "c",
+		"fx25tag.h": "c",
+		"afio.h": "c",
+		"rs.h": "c",
+		"gf.h": "c",
+		"audio_pwm.h": "c",
+		"audio.h": "c",
+		"pico.h": "c"
+	}
+}
