@@ -132,13 +132,13 @@ static size_t _ax25_tx(ax25_t* ax25, int16_t* wav, uint8_t* frame, size_t length
 
 	for (i = 0; i < length; i++) {
 		len += _ax25_txbyte(ax25, &wav, frame[i], 0);
-		printf("%d ",frame[i]);
+		// printf("%d ",frame[i]);
 	}
 
 	for (i = 0; i < ax25->rest; i++) {
 		len += _ax25_txbyte(ax25, &wav, 0x7E, 1);
 	}
-	printf("\n");
+	// printf("\n");
 	return (len);
 }
 
