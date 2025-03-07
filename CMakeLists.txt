@@ -128,6 +128,7 @@ set(TARGET_DEMO_EXE_NAME main)
 
 add_executable(${TARGET_DEMO_EXE_NAME}
     src/main.cpp
+	src/hw_config.c
 )
 
 target_compile_options(${TARGET_DEMO_EXE_NAME}
@@ -142,6 +143,8 @@ target_include_directories(${TARGET_DEMO_EXE_NAME} PRIVATE
   include
 )
 
+add_subdirectory(lib/no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI build)
+
 # Create map/bin/hex file etc.
 pico_add_extra_outputs(${TARGET_DEMO_EXE_NAME})
 
@@ -151,13 +154,14 @@ target_link_libraries(${TARGET_DEMO_EXE_NAME}
     # pico_audio_pwm
     # pico_stdlib
 	# hardware_i2c
-	# hardware_spi
+	hardware_spi
 	radio
 	sense
 	pico_multicore
-	hardware_rtc
-	hardware_adc
-	hardware_flash
+	# hardware_rtc
+	# hardware_adc
+	# hardware_flash
+	FatFs_SPI
 )
 
 

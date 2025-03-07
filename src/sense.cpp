@@ -43,8 +43,10 @@ uint32_t getAbsoluteHumidity(float temperature, float humidity) {
 
 
 void accinit() {
-	if (!sox.begin_I2C()) {
-		// while (1); // TODO remove
+	if (!sox.begin_I2C(0x6B)) {
+		// while (1) {
+		// 	Serial.println("acc");
+		// } // TODO remove
 	}
 
 	sox.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);
@@ -254,9 +256,9 @@ float norm(std::vector<float> v) {
 	return sqrt(a);
 }
 
-float getG(){
+float getG() {
 	std::vector<float> acc = getAccArr();
-	return norm(acc)/9.8;
+	return norm(acc) / 9.8;
 
 }
 
