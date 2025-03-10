@@ -6,6 +6,7 @@ include(cmake/pico_extras_import.cmake) # File copied from $PICO_SDK_PATH/../pic
 project(raspi-pico-aprs-tnc VERSION 0.1)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 
 pico_sdk_init()
 
@@ -112,6 +113,7 @@ add_subdirectory(pico-arduino-compat/libs/adafruit-unified-sensor)
 add_subdirectory(pico-arduino-compat/libs/adafruit-bmp3xx-library)
 add_subdirectory(pico-arduino-compat/libs/adafruit-lsm6ds)
 add_subdirectory(pico-arduino-compat/libs/adafruit-sgp30-sensor)
+add_subdirectory(pico-arduino-compat/libs/adafruit-ina219)
   
 target_link_libraries(${SENSE_LIB}
     pico_stdlib
@@ -119,6 +121,7 @@ target_link_libraries(${SENSE_LIB}
 	pac-adafruit-lsm6ds
 	pac-adafruit-unified-sensor
 	pac-adafruit-sgp30-sensor
+	pac-adafruit-ina219
 )
 
 

@@ -1,4 +1,4 @@
-// #define AIR
+#define AIR
 #define ACC
 #define ALT
 #define RADIO
@@ -33,7 +33,9 @@ float alt2 = 100;
 
 float minP = 0;
 float maxAlt = 0;
-float maxG = 0;
+float maxG0 = 0;
+float maxG1 = 0;
+float co2 = 0;
 
 void core2();
 
@@ -211,7 +213,8 @@ int main() {
 	#endif
 
 	#ifdef ACC
-	accinit();
+	acc0init();
+	acc1init();
 	#endif
 
 	#ifdef ALT
@@ -222,6 +225,8 @@ int main() {
 	seaLevel = getPressure();
 	minP = seaLevel;
 	#endif
+
+	curinit();
 
 	multicore_launch_core1(core2);
 	while (true) {
@@ -247,9 +252,13 @@ int main() {
 		float p = getPressure();
 		float alt = getAlt();
 		float temp = getTempBMP();
+		float cur = getcur();
+		float volt = getv();
 
-		std::vector<float> acc = getAccArr();
-		float g = norm(acc) / 9.8;
+		std::vector<float> acc0 = getAccArr0();
+		std::vector<float> acc1 = getAccArr1();
+		float g0 = norm(acc0) / 9.8;
+		float g1 = norm(acc1) / 9.8;
 
 		// setMax(p,seaLevel);
 		// setMin(p,minP);
@@ -265,8 +274,11 @@ int main() {
 		if (max(alt, maxAlt) == alt) {
 			maxAlt = alt;
 		}
-		if (max(g, maxG) == g) {
-			maxG = g;
+		if (max(g0, maxG0) == g0) {
+			maxG0 = g0;
+		}
+		if (max(g1, maxG1) == g1) {
+			maxG1 = g1;
 		}
 		if (alt > alt1 && !flying) {
 			Serial.println();
@@ -276,28 +288,50 @@ int main() {
 			landed = true;
 		}
 
+		#ifdef AIR
+		// testair();
+		co2 = getCO2();
+		#endif
+
+
 		ready = false;
 		data = "";
 		// data = data.append(datetime_str);
-		data = data.append(std::to_string(millis()));
+		// data = data.append(std::to_string(millis()));
 		data = data.append(" P:");
-		data = data.append(std::to_string(p));
+		data = data.append(tostr(p));
 		data = data.append(",");
-		data = data.append(std::to_string(minP));
+		data = data.append(tostr(minP));
 		data = data.append(",");
-		data = data.append(std::to_string(seaLevel));
+		data = data.append(tostr(seaLevel));
 		data = data.append(" A:");
-		data = data.append(std::to_string(alt));
+		data = data.append(tostr(alt));
 		data = data.append(",");
-		data = data.append(std::to_string(maxAlt));
+		data = data.append(tostr(maxAlt));
 		// data = data.append(" ");
-		data = data.append(getAcc());
-		data = data.append(" G:");
-		data = data.append(std::to_string(g));
+		data = data.append(getAcc0());
+		data = data.append(" G0:");
+		data = data.append(tostr(g0));
 		data = data.append(",");
-		data = data.append(std::to_string(maxG));
+		data = data.append(tostr(maxG0));
+		data = data.append(getAcc1());
+		data = data.append(" G1:");
+		data = data.append(tostr(g1));
+		data = data.append(",");
+		data = data.append(tostr(maxG1));
 		data = data.append(" T:");
-		data = data.append(std::to_string(temp));
+		data = data.append(tostr(temp));
+		
+		#ifdef AIR
+		// testair();
+		data = data.append(" C:");
+		data = data.append(tostr(co2));
+		#endif
+		data = data.append(" I:");
+		data = data.append(tostr(cur));
+		data = data.append(" V:");
+		data = data.append(tostr(volt));
+
 		char* x = (char*)data.c_str();
 
 		#endif
@@ -305,7 +339,7 @@ int main() {
 		// if (landed) {
 		ready = true;
 		// }
-		// Serial.println(x);
+		Serial.println(x);
 		// Serial.println(millis() - a);
 
 		// sleep_ms(100);
@@ -343,7 +377,7 @@ void core2() {
 		// for (int i = 0; i < 3; i++) {
 		data1 = data1.append(data);
 		char* x = (char*)data1.c_str();
-		Serial.println(x);
+		// Serial.println(x);
 		sendData(x);
 	}
 	// while (true) {
