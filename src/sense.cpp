@@ -73,7 +73,7 @@ lsm6ds_accel_range_t range = LSM6DS_ACCEL_RANGE_16_G;
 data_rate rate = LSM6DS_RATE_6_66K_HZ;
 
 void acc0init() {
-	if (!sox.begin_I2C(0x6B)) {
+	if (!sox.begin_I2C(0x6A)) {
 		// while (1) {
 		// 	Serial.println("acc");
 		// } // TODO remove
@@ -175,7 +175,7 @@ void acc0init() {
 
 
 void acc1init() {
-	if (!stem.begin_I2C(0x6A)) {
+	if (!stem.begin_I2C(0x6B)) {
 		// while (1) {
 		// 	Serial.println("acc");
 		// } // TODO remove
@@ -339,7 +339,9 @@ void testacc1() {
 void altinit() {
 	if (!bmp.begin_I2C()) {
 		Serial.println("Could not find a valid BMP3 sensor, check wiring!");
-		// while (1); // TODO remove
+		// while (1){
+		// 	Serial.println("Could not find a valid BMP3 sensor, check wiring!");
+		// }; // TODO remove
 	}
 	bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
 	bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);

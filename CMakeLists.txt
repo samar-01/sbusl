@@ -7,7 +7,11 @@ project(raspi-pico-aprs-tnc VERSION 0.1)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
-
+set(PICO_BOARD pico_w)
+# set(PICO_PLATFORM rp2350-arm-s)
+# set(PICO_PLATFORM rp2350)
+# set(PICOTOOL_FORCE_FETCH_FROM_GIT true)
+set(PICO_SDK_FETCH_FROM_GIT on)
 pico_sdk_init()
 
 # Setup of eleccoder's version of Philip Heron's 'ax25beacon' project

@@ -1,6 +1,8 @@
-#define AIR
+// #define AIR
 #define ACC
+// #define ACC2
 #define ALT
+#define CUR
 #define RADIO
 
 #include <string>
@@ -11,6 +13,7 @@
 #include "pico/multicore.h"
 #include "hardware/rtc.h"
 #include "pico/util/datetime.h"
+#include "hardware/pwm.h"
 
 #include "pico/stdlib.h"
 // #include "hardware/flash.h" // for the flash erasing and writing
@@ -103,12 +106,20 @@ void sd() {
 	// 	}
 	// }
 
+
+	gpio_init(13);
+	gpio_set_dir(13, GPIO_OUT);
+	gpio_put(13, HIGH);
+
+	sleep_ms(1000);
+
 	printf("a\n");
 	// Initialize SD card
 	if (!sd_init_driver()) {
 		printf("ERROR: Could not initialize SD card\r\n");
 		while (true);
 	}
+	printf("inited\n");
 
 	// Mount drive
 	fr = f_mount(&fs, "0:", 1);
@@ -116,6 +127,7 @@ void sd() {
 		printf("ERROR: Could not mount filesystem (%d)\r\n", fr);
 		while (true);
 	}
+	printf("mounted\n");
 
 	// Open file for writing ()
 	fr = f_open(&fil, filename, FA_WRITE | FA_CREATE_ALWAYS);
@@ -123,6 +135,8 @@ void sd() {
 		printf("ERROR: Could not open file (%d)\r\n", fr);
 		while (true);
 	}
+	printf("opened\n");
+
 
 	// Write something to file
 	ret = f_printf(&fil, "This is another test\r\n");
@@ -137,6 +151,7 @@ void sd() {
 		f_close(&fil);
 		while (true);
 	}
+	printf("wrote\n");
 
 	// Close file
 	fr = f_close(&fil);
@@ -144,6 +159,7 @@ void sd() {
 		printf("ERROR: Could not close file (%d)\r\n", fr);
 		while (true);
 	}
+	printf("closed\n");
 
 	// Open file for reading
 	fr = f_open(&fil, filename, FA_READ);
@@ -178,10 +194,16 @@ void sd() {
 // }
 
 int main() {
-	// sd();
-	stdio_init_all();
 
-	// sleep_ms(5000);
+	gpio_init(LEDPIN);
+	gpio_set_dir(LEDPIN, GPIO_OUT);
+	gpio_put(LEDPIN, HIGH);
+	sd();
+	while (1) {}
+	stdio_init_all();
+	multicore_launch_core1(core2);
+
+	sleep_ms(100);
 
 	// char datetime_buf[256];
 	// char* datetime_str = &datetime_buf[0];
@@ -214,6 +236,8 @@ int main() {
 
 	#ifdef ACC
 	acc0init();
+	#endif
+	#ifdef ACC2
 	acc1init();
 	#endif
 
@@ -226,9 +250,10 @@ int main() {
 	minP = seaLevel;
 	#endif
 
+	#ifdef CUR
 	curinit();
+	#endif
 
-	multicore_launch_core1(core2);
 	while (true) {
 		// unsigned long a = millis();
 		#ifdef AIR
@@ -247,23 +272,10 @@ int main() {
 		// datetime_to_str(datetime_str, sizeof(datetime_buf), &t);
 
 
-		#ifdef ACC
 		#ifdef ALT
 		float p = getPressure();
 		float alt = getAlt();
 		float temp = getTempBMP();
-		float cur = getcur();
-		float volt = getv();
-
-		std::vector<float> acc0 = getAccArr0();
-		std::vector<float> acc1 = getAccArr1();
-		float g0 = norm(acc0) / 9.8;
-		float g1 = norm(acc1) / 9.8;
-
-		// setMax(p,seaLevel);
-		// setMin(p,minP);
-		// setMax(alt,maxAlt);
-		// setMax(g,maxG); // TODO get working
 
 		if (max(p, seaLevel) == p) {
 			seaLevel = p;
@@ -274,12 +286,10 @@ int main() {
 		if (max(alt, maxAlt) == alt) {
 			maxAlt = alt;
 		}
-		if (max(g0, maxG0) == g0) {
-			maxG0 = g0;
-		}
-		if (max(g1, maxG1) == g1) {
-			maxG1 = g1;
-		}
+		// setMax(p,seaLevel);
+		// setMin(p,minP);
+		// setMax(alt,maxAlt);
+		// setMax(g,maxG); // TODO get working
 		if (alt > alt1 && !flying) {
 			Serial.println();
 			flying = true;
@@ -287,6 +297,29 @@ int main() {
 		} else if ((flying && alt < alt2) || millis() >= 1000 * 60 * 10) {
 			landed = true;
 		}
+
+		#endif
+
+		#ifdef CUR
+		float cur = getcur();
+		float volt = getv();
+		#endif
+
+		#ifdef ACC
+		std::vector<float> acc0 = getAccArr0();
+		float g0 = norm(acc0) / 9.8;
+
+		if (max(g0, maxG0) == g0) {
+			maxG0 = g0;
+		}
+		#endif
+		#ifdef ACC2
+		std::vector<float> acc1 = getAccArr1();
+		float g1 = norm(acc1) / 9.8;
+		if (max(g1, maxG1) == g1) {
+			maxG1 = g1;
+		}
+		#endif
 
 		#ifdef AIR
 		// testair();
@@ -298,6 +331,7 @@ int main() {
 		data = "";
 		// data = data.append(datetime_str);
 		// data = data.append(std::to_string(millis()));
+		#ifdef ALT
 		data = data.append(" P:");
 		data = data.append(tostr(p));
 		data = data.append(",");
@@ -308,34 +342,42 @@ int main() {
 		data = data.append(tostr(alt));
 		data = data.append(",");
 		data = data.append(tostr(maxAlt));
+		#endif
 		// data = data.append(" ");
+		#ifdef ACC
 		data = data.append(getAcc0());
 		data = data.append(" G0:");
 		data = data.append(tostr(g0));
 		data = data.append(",");
 		data = data.append(tostr(maxG0));
+		#endif
+		#ifdef ACC2
 		data = data.append(getAcc1());
 		data = data.append(" G1:");
 		data = data.append(tostr(g1));
 		data = data.append(",");
 		data = data.append(tostr(maxG1));
+		#endif
+		#ifdef ALT
 		data = data.append(" T:");
 		data = data.append(tostr(temp));
-		
+		#endif
+
 		#ifdef AIR
 		// testair();
 		data = data.append(" C:");
 		data = data.append(tostr(co2));
 		#endif
+
+		#ifdef CUR
 		data = data.append(" I:");
 		data = data.append(tostr(cur));
 		data = data.append(" V:");
 		data = data.append(tostr(volt));
+		#endif
 
 		char* x = (char*)data.c_str();
 
-		#endif
-		#endif
 		// if (landed) {
 		ready = true;
 		// }
@@ -357,14 +399,58 @@ int main() {
 // }
 
 int incomingByte = 0;
+bool led = false;
+void pwm_init_pin(uint8_t pin) {
+	gpio_set_function(pin, GPIO_FUNC_PWM);
+	uint slice_num = pwm_gpio_to_slice_num(pin);
+	pwm_config config = pwm_get_default_config();
+	pwm_config_set_clkdiv(&config, 4.f);
+	pwm_init(slice_num, &config, true);
+}
+
+
 void core2() {
+
+	gpio_init(LEDPIN);
+	gpio_set_dir(LEDPIN, GPIO_OUT);
+	gpio_put(LEDPIN, HIGH);
+
+	// gpio_init(BUZZPIN);
+	// gpio_set_dir(BUZZPIN, GPIO_OUT);
+	// gpio_set_dir(BUZZPIN, GPIO_FUNC_PWM);
+	// gpio_put(BUZZPIN, HIGH);
+	pwm_init_pin(BUZZPIN);
+	pwm_set_gpio_level(BUZZPIN, 255 * 128);
+
+
+	// for (int i = 0; i < 255; i++) {
+	// 	pwm_set_gpio_level(BUZZPIN, i*i);
+
+	// 	sleep_ms(10);
+	// 	if (i == 250){
+	// 		i = 0;
+	// 	}
+	// }
+
+	// uint slice_num = pwm_gpio_to_slice_num(BUZZPIN);
+	// pwm_set_wrap(slice_num, 3);
+	// pwm_set_chan_level(slice_num, PWM_CHAN_A, 2);
+	// pwm_set_chan_level(slice_num, PWM_CHAN_B, 2);
+	// pwm_set_enabled(slice_num, true);
+
+
+	while (1) {
+	}
+
 	// sleep_ms(1000);
-	// sendData("Bootup complete");
+	sendData("Bootup complete");
 	// sendData("Bootup complete");
 	// sendData("Bootup complete");
 	// send();
 	// send();
 	// send();
+
+
 
 	while (true) {
 		std::string data1 = std::to_string(millis());

@@ -12,3 +12,6 @@ extern audio_buffer_pool_t* audio_buffer_pool;
 void testradio();
 void radioinit();
 void sendData(const char* data);
+
+const int LEDPIN = 14;
+const int BUZZPIN = 15;
