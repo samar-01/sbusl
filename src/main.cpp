@@ -14,6 +14,7 @@
 #include "pico/multicore.h"
 #include "hardware/rtc.h"
 #include "pico/util/datetime.h"
+#include <vector>
 #include "hardware/pwm.h"
 // #include "pico/mutex.h"
 // mutex mtx;
@@ -38,8 +39,8 @@ std::string data;
 std::string datareal;
 bool ready = false;
 bool flying = false;
-uint32_t flightStart;
-uint32_t landtime;
+uint32_t flightStart = 0;
+uint32_t landtime = 0;
 bool landed = false;
 float alt1 = 200; // TODO change
 float alt2 = 100;
@@ -51,10 +52,19 @@ float lastAlt = 0;
 float speed = 0;
 float minspeed = 0;
 float maxspeed = 0;
+float landspeed = 0;
 float maxG0 = 0;
 float maxG1 = 0;
 float co2 = 0;
 float charge = 0;
+
+// #ifdef ACC2
+std::vector<uint32_t> gtimes;
+float mintg = 5;
+float maxtg = 30;
+float tgsplit = 20;
+bool survived = true;
+// #endif
 
 void core2();
 
@@ -179,6 +189,9 @@ int main() {
 		sendData("ACC 1 Fail");
 		error();
 	}
+	for (int i = 0; i < tgsplit; i++) {
+		gtimes.push_back(0);
+	}
 	#endif
 
 	#ifdef ACC2
@@ -270,10 +283,27 @@ int main() {
 		}
 		if (landed && g0 > 2 && landtime == 0) {
 			landtime = millis();
+			#ifdef ALT
+			landspeed = speed;
+			#endif
 		}
 
 		if (!flying && flightStart != 0 && millis() - flightStart > 10000) {
 			flightStart = 0;
+		}
+
+
+		for (int i = 0; i < tgsplit; i++) {
+			// gtimes.push_back(0);
+			float gx = (maxtg - mintg) / (tgsplit - 1) * i + mintg;
+			if (g0 > gx && gtimes.at(i) != 0) {
+				gtimes.at(i) = millis();
+			} else {
+				float t = millis() - gtimes.at(i);
+				if (t > 32 * pow(gx, -0.261)) {
+					survived = false;
+				}
+			}
 		}
 		#endif
 		#ifdef ACC2
@@ -308,6 +338,8 @@ int main() {
 		data = data.append(" V:");
 		data = data.append(tostr(speed));
 		data = data.append(",");
+		data = data.append(tostr(landspeed));
+		data = data.append(",");
 		data = data.append(tostr(minspeed));
 		data = data.append(",");
 		data = data.append(tostr(maxspeed));
@@ -319,6 +351,14 @@ int main() {
 		data = data.append(tostr(g0));
 		data = data.append(",");
 		data = data.append(tostr(maxG0));
+		data = data.append("S:");
+		std::string survive = "";
+		if (survived) {
+			survive.append("T");
+		} else {
+			survive.append("F");
+		}
+		data = data.append(survive);
 		#endif
 		#ifdef ACC2
 		data = data.append(getAcc1());
@@ -369,11 +409,11 @@ int main() {
 		// sleep_ms(500);
 		sd1::open(i / 10);
 		// sd1::open();
-		if (landed) {
-			sd1::write1(std::to_string(flightStart).append(data));
-		} else {
-			sd1::write1(std::to_string(flightStart).append(" ").append(std::to_string(landtime)).append(data));
-		}
+		// if (landed) {
+		// 	sd1::write1(std::to_string(flightStart).append(data));
+		// } else {
+		sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(landtime-flightStart)).append(data));
+		// }
 		// sd1::finish();
 
 		Serial.println(millis() - a);
