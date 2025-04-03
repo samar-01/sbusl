@@ -39,5 +39,5 @@ void sendData(const char* data) {
 		'/',        // APRS symbol table: Primary
 		'>',        // APRS symbol code:  Car
 		256u);      // Volume    (0 ... 256)
-	gpio_put(BUZZPIN, false);
+	// gpio_put(BUZZPIN, false);
 }

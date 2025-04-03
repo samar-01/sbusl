@@ -24,7 +24,7 @@ void altinit();
 
 void testair();
 void testalt();
-void test0acc();
+void testacc0();
 void testacc1();
 
 uint16_t getCO2();

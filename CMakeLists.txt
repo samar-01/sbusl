@@ -38,7 +38,7 @@ pico_sdk_init()
 set(TARGET_LIB_NAME aprs_pico)
 
 add_library(${TARGET_LIB_NAME}
-    src/aprs_pico.c
+	src/aprs_pico.c
 	src/ax25.c
 	src/ax25beacon.c
 	# src/fx25_encode.c
@@ -49,27 +49,27 @@ target_compile_options(${TARGET_LIB_NAME}
 )
 
 target_include_directories(${TARGET_LIB_NAME} PUBLIC
-    include
+	include
 	# src/Reed-Solomon
 )
 
 set_target_properties(${TARGET_LIB_NAME}
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
   
 target_link_libraries(${TARGET_LIB_NAME}
-    # ax25_aprs_lib::ax25beacon
-    pico_audio_pwm        
-    pico_stdlib
+	# ax25_aprs_lib::ax25beacon
+	pico_audio_pwm        
+	pico_stdlib
 )
 
 
 set(RADIO_LIB radio)
 
 add_library(${RADIO_LIB}
-    src/radio.cpp
+	src/radio.cpp
 	)
 
 target_compile_options(${RADIO_LIB}
@@ -77,26 +77,26 @@ target_compile_options(${RADIO_LIB}
 )
 
 target_include_directories(${RADIO_LIB} PUBLIC
-    include
+	include
 )
 
 set_target_properties(${RADIO_LIB}
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
   
 target_link_libraries(${RADIO_LIB}
-    ${TARGET_LIB_NAME}
-    pico_audio_pwm
-    pico_stdlib
+	${TARGET_LIB_NAME}
+	pico_audio_pwm
+	pico_stdlib
 )
 
 
 set(SENSE_LIB sense)
 
 add_library(${SENSE_LIB}
-    src/sense.cpp
+	src/sense.cpp
 	)
 
 target_compile_options(${SENSE_LIB}
@@ -104,12 +104,12 @@ target_compile_options(${SENSE_LIB}
 )
 
 target_include_directories(${SENSE_LIB} PUBLIC
-    include
+	include
 )
 
 set_target_properties(${SENSE_LIB}
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	PROPERTIES
+	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 )
 
 
@@ -120,7 +120,7 @@ add_subdirectory(pico-arduino-compat/libs/adafruit-sgp30-sensor)
 add_subdirectory(pico-arduino-compat/libs/adafruit-ina219)
   
 target_link_libraries(${SENSE_LIB}
-    pico_stdlib
+	pico_stdlib
 	pac-adafruit-bmp3xx-library
 	pac-adafruit-lsm6ds
 	pac-adafruit-unified-sensor
@@ -129,12 +129,39 @@ target_link_libraries(${SENSE_LIB}
 )
 
 
+set(SD_LIB sd)
+
+add_library(${SD_LIB}
+    src/sd.cpp
+	)
+
+target_compile_options(${SD_LIB}
+  PRIVATE "${APRS_PICO_COMPILE_WARN_OPTIONS}"
+)
+
+target_include_directories(${SD_LIB} PUBLIC
+    include
+)
+
+add_subdirectory(lib/no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI build)
+
+set_target_properties(${SD_LIB}
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	)
+	
+target_link_libraries(${SD_LIB}
+    pico_stdlib
+	FatFs_SPI
+)
+
+
 # ##### Configure the build of the DEMO applications #####
 
 set(TARGET_DEMO_EXE_NAME main)
 
 add_executable(${TARGET_DEMO_EXE_NAME}
-    src/main.cpp
+	src/main.cpp
 	src/hw_config.c
 )
 
@@ -150,25 +177,24 @@ target_include_directories(${TARGET_DEMO_EXE_NAME} PRIVATE
   include
 )
 
-add_subdirectory(lib/no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI build)
 
 # Create map/bin/hex file etc.
 pico_add_extra_outputs(${TARGET_DEMO_EXE_NAME})
 
 target_link_libraries(${TARGET_DEMO_EXE_NAME}
-    # ${TARGET_LIB_NAME}
-    # ax25_aprs_lib::ax25beacon
-    # pico_audio_pwm
-    # pico_stdlib
+	# ${TARGET_LIB_NAME}
+	# ax25_aprs_lib::ax25beacon
+	# pico_audio_pwm
+	# pico_stdlib
 	# hardware_i2c
 	hardware_spi
 	radio
 	sense
+	sd
 	pico_multicore
 	# hardware_rtc
 	# hardware_adc
 	# hardware_flash
-	FatFs_SPI
 )
 
 

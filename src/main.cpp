@@ -4,6 +4,7 @@
 #define ALT
 #define CUR
 #define RADIO
+#define SD
 
 #include <string>
 #include <stdio.h>
@@ -14,8 +15,11 @@
 #include "hardware/rtc.h"
 #include "pico/util/datetime.h"
 #include "hardware/pwm.h"
+// #include "pico/mutex.h"
+// mutex mtx;
 
-#include "pico/stdlib.h"
+auto_init_mutex(my_mutex);
+
 // #include "hardware/flash.h" // for the flash erasing and writing
 // #include "hardware/sync.h" // for the interrupts
 // #define FLASH_TARGET_OFFSET (512 * 1024) // choosing to start at 512K
@@ -26,19 +30,31 @@
 
 #include "sense.h"
 
+#ifdef SD
+#include "sd.h"
+#endif
+
 std::string data;
+std::string datareal;
 bool ready = false;
 bool flying = false;
 uint32_t flightStart;
+uint32_t landtime;
 bool landed = false;
 float alt1 = 200; // TODO change
 float alt2 = 100;
 
 float minP = 0;
 float maxAlt = 0;
+uint32_t alttime;
+float lastAlt = 0;
+float speed = 0;
+float minspeed = 0;
+float maxspeed = 0;
 float maxG0 = 0;
 float maxG1 = 0;
 float co2 = 0;
+float charge = 0;
 
 void core2();
 
@@ -65,145 +81,37 @@ void setMax(T x, T current) {
 		current = x;
 	}
 }
-
-#include "sd_card.h"
-#include "ff.h"
-
-
-#ifdef __cplusplus
-extern "C" {
-	#endif
-
-	size_t sd_get_num();
-	sd_card_t* sd_get_by_num(size_t num);
-
-	size_t spi_get_num();
-	spi_t* spi_get_by_num(size_t num);
-
-	#ifdef __cplusplus
+void pwm_init_pin(uint8_t pin) {
+	gpio_set_function(pin, GPIO_FUNC_PWM);
+	uint slice_num = pwm_gpio_to_slice_num(pin);
+	pwm_config config = pwm_get_default_config();
+	pwm_config_set_clkdiv(&config, 4.f);
+	pwm_init(slice_num, &config, true);
 }
-#endif
-// extern "C" {
-void sd() {
 
-
-	FRESULT fr;
-	FATFS fs;
-	FIL fil;
-	int ret;
-	char buf[100];
-	char filename[] = "test02.txt";
-
-	// // Initialize chosen serial port
-	stdio_init_all();
-
-	// Wait for user to press 'enter' to continue
-	// printf("\r\nSD card test. Press 'enter' to start.\r\n");
-	// while (true) {
-	// 	buf[0] = getchar();
-	// 	if ((buf[0] == '\r') || (buf[0] == '\n')) {
-	// 		break;
-	// 	}
-	// }
-
-
-	gpio_init(13);
-	gpio_set_dir(13, GPIO_OUT);
-	gpio_put(13, HIGH);
-
-	sleep_ms(1000);
-
-	printf("a\n");
-	// Initialize SD card
-	if (!sd_init_driver()) {
-		printf("ERROR: Could not initialize SD card\r\n");
-		while (true);
-	}
-	printf("inited\n");
-
-	// Mount drive
-	fr = f_mount(&fs, "0:", 1);
-	if (fr != FR_OK) {
-		printf("ERROR: Could not mount filesystem (%d)\r\n", fr);
-		while (true);
-	}
-	printf("mounted\n");
-
-	// Open file for writing ()
-	fr = f_open(&fil, filename, FA_WRITE | FA_CREATE_ALWAYS);
-	if (fr != FR_OK) {
-		printf("ERROR: Could not open file (%d)\r\n", fr);
-		while (true);
-	}
-	printf("opened\n");
-
-
-	// Write something to file
-	ret = f_printf(&fil, "This is another test\r\n");
-	if (ret < 0) {
-		printf("ERROR: Could not write to file (%d)\r\n", ret);
-		f_close(&fil);
-		while (true);
-	}
-	ret = f_printf(&fil, "of writing to an SD card.\r\n");
-	if (ret < 0) {
-		printf("ERROR: Could not write to file (%d)\r\n", ret);
-		f_close(&fil);
-		while (true);
-	}
-	printf("wrote\n");
-
-	// Close file
-	fr = f_close(&fil);
-	if (fr != FR_OK) {
-		printf("ERROR: Could not close file (%d)\r\n", fr);
-		while (true);
-	}
-	printf("closed\n");
-
-	// Open file for reading
-	fr = f_open(&fil, filename, FA_READ);
-	if (fr != FR_OK) {
-		printf("ERROR: Could not open file (%d)\r\n", fr);
-		while (true);
-	}
-
-	// Print every line in file over serial
-	printf("Reading from file '%s':\r\n", filename);
-	printf("---\r\n");
-	while (f_gets(buf, sizeof(buf), &fil)) {
-		printf(buf);
-	}
-	printf("\r\n---\r\n");
-
-	// Close file
-	fr = f_close(&fil);
-	if (fr != FR_OK) {
-		printf("ERROR: Could not close file (%d)\r\n", fr);
-		while (true);
-	}
-
-	// Unmount drive
-	f_unmount("0:");
-
-	// Loop forever doing nothing
-	while (true) {
-		sleep_ms(1000);
+void error() {
+	while (1) {
+		pwm_set_gpio_level(BUZZPIN, 255 * 128);
+		sleep_ms(100);
+		pwm_set_gpio_level(BUZZPIN, 0);
+		sleep_ms(100);
 	}
 }
-// }
 
 int main() {
-
-	gpio_init(LEDPIN);
-	gpio_set_dir(LEDPIN, GPIO_OUT);
-	gpio_put(LEDPIN, HIGH);
-	sd();
-	while (1) {}
+	// sd();
+	// while (1) {}
 	stdio_init_all();
 	multicore_launch_core1(core2);
+	pwm_set_gpio_level(BUZZPIN, 0);
+	pwm_init_pin(LEDPIN);
+	// pwm_set_gpio_level(LEDPIN, 255 * 10);
+	pwm_init_pin(BUZZPIN);
+	// pwm_set_gpio_level(BUZZPIN, 255 * 128);
+	// sleep_ms(100);
+	// pwm_set_gpio_level(BUZZPIN, 255 * 0);
+	unsigned long a = millis();
 
-	sleep_ms(100);
 
 	// char datetime_buf[256];
 	// char* datetime_str = &datetime_buf[0];
@@ -219,7 +127,6 @@ int main() {
 	// };
 	// rtc_init();
 	// rtc_set_datetime(&t);
-	Serial.println("startup");
 
 	#if PTT_ENABLE == true
 	gpio_init(PTT_GPXX_PIN);
@@ -252,22 +159,57 @@ int main() {
 
 	#ifdef CUR
 	curinit();
+	float cur = getcur();
+	float volt = getv();
+	if (cur <= 0 || volt <= 0) { //idk about this one
+		// sendData("Current Fail");
+		// error();
+	}
 	#endif
 
+	#ifdef AIR
+	testair();
+	#endif
+
+	#ifdef ACC
+	testacc0();
+	std::vector<float> acc0 = getAccArr0();
+	float g0 = norm(acc0) / 9.8;
+	if (g0 < 0.5 || g0 > 1.5) {
+		sendData("ACC 1 Fail");
+		error();
+	}
+	#endif
+
+	#ifdef ACC2
+	testacc1();
+	std::vector<float> acc1 = getAccArr1();
+	float g1 = norm(acc1) / 9.8;
+	if (g1 < 0.5 || g1 > 1.5) {
+		sendData("ACC 2 Fail");
+		error();
+	}
+	#endif
+
+	#ifdef ALT
+	testalt();
+	float px = getPressure();
+	if (px > 1500 || px < 500) {
+		sendData("Alt Fail");
+		error();
+	}
+	#endif
+
+	// sdtest();
+	sd1::setup();
+	pwm_set_gpio_level(LEDPIN, 255 * 50);
+	pwm_set_gpio_level(BUZZPIN, 255 * 128);
+	sleep_ms(300);
+	pwm_set_gpio_level(BUZZPIN, 0);
+	int i = 0;
 	while (true) {
-		// unsigned long a = millis();
-		#ifdef AIR
-		// testair();
-		#endif
-
-		#ifdef ACC
-		// testacc();
-		#endif
-
-		#ifdef ALT
-		// testalt();
-		#endif
-
+		i++;
+		a = millis();
 		// rtc_get_datetime(&t);
 		// datetime_to_str(datetime_str, sizeof(datetime_buf), &t);
 
@@ -275,6 +217,17 @@ int main() {
 		#ifdef ALT
 		float p = getPressure();
 		float alt = getAlt();
+		if (alttime != 0) {
+			speed = 1000 * (alt - lastAlt) / (millis() - alttime);
+
+			if (max(speed, maxspeed) == speed) {
+				maxspeed = speed;
+			}
+			if (min(speed, minspeed) == speed) {
+				minspeed = speed;
+			}
+		}
+		alttime = millis();
 		float temp = getTempBMP();
 
 		if (max(p, seaLevel) == p) {
@@ -293,11 +246,11 @@ int main() {
 		if (alt > alt1 && !flying) {
 			Serial.println();
 			flying = true;
-			flightStart = millis();
+			// flightStart = millis();
 		} else if ((flying && alt < alt2) || millis() >= 1000 * 60 * 10) {
 			landed = true;
 		}
-
+		lastAlt = alt;
 		#endif
 
 		#ifdef CUR
@@ -311,6 +264,16 @@ int main() {
 
 		if (max(g0, maxG0) == g0) {
 			maxG0 = g0;
+		}
+		if (!flying && g0 > 2 && flightStart == 0) {
+			flightStart = millis();
+		}
+		if (landed && g0 > 2 && landtime == 0) {
+			landtime = millis();
+		}
+
+		if (!flying && flightStart != 0 && millis() - flightStart > 10000) {
+			flightStart = 0;
 		}
 		#endif
 		#ifdef ACC2
@@ -342,6 +305,12 @@ int main() {
 		data = data.append(tostr(alt));
 		data = data.append(",");
 		data = data.append(tostr(maxAlt));
+		data = data.append(" V:");
+		data = data.append(tostr(speed));
+		data = data.append(",");
+		data = data.append(tostr(minspeed));
+		data = data.append(",");
+		data = data.append(tostr(maxspeed));
 		#endif
 		// data = data.append(" ");
 		#ifdef ACC
@@ -370,8 +339,11 @@ int main() {
 		#endif
 
 		#ifdef CUR
+		charge -= (millis() - a) / 1000 * cur;
 		data = data.append(" I:");
 		data = data.append(tostr(cur));
+		data = data.append(" C:");
+		data = data.append(tostr(charge / (3600)));
 		data = data.append(" V:");
 		data = data.append(tostr(volt));
 		#endif
@@ -381,12 +353,34 @@ int main() {
 		// if (landed) {
 		ready = true;
 		// }
+		if (flightStart != 0) {
+			Serial.print(millis() - flightStart);
+		}
 		Serial.println(x);
-		// Serial.println(millis() - a);
+		// mtx.lock();
 
-		// sleep_ms(100);
+		uint32_t owner_out;
+		if (mutex_try_enter(&my_mutex, &owner_out)) {
+			datareal = data;
+			mutex_exit(&my_mutex);
+		} else {
+			// sleep_ms(10);
+		}
+		// sleep_ms(500);
+		sd1::open(i / 10);
+		// sd1::open();
+		if (landed) {
+			sd1::write1(std::to_string(flightStart).append(data));
+		} else {
+			sd1::write1(std::to_string(flightStart).append(" ").append(std::to_string(landtime)).append(data));
+		}
+		// sd1::finish();
+
+		Serial.println(millis() - a);
+
 		// Serial.println("\nloop");
 	}
+	sd1::finish();
 
 	return 0;
 }
@@ -400,71 +394,35 @@ int main() {
 
 int incomingByte = 0;
 bool led = false;
-void pwm_init_pin(uint8_t pin) {
-	gpio_set_function(pin, GPIO_FUNC_PWM);
-	uint slice_num = pwm_gpio_to_slice_num(pin);
-	pwm_config config = pwm_get_default_config();
-	pwm_config_set_clkdiv(&config, 4.f);
-	pwm_init(slice_num, &config, true);
-}
-
 
 void core2() {
-
-	gpio_init(LEDPIN);
-	gpio_set_dir(LEDPIN, GPIO_OUT);
-	gpio_put(LEDPIN, HIGH);
-
-	// gpio_init(BUZZPIN);
-	// gpio_set_dir(BUZZPIN, GPIO_OUT);
-	// gpio_set_dir(BUZZPIN, GPIO_FUNC_PWM);
-	// gpio_put(BUZZPIN, HIGH);
-	pwm_init_pin(BUZZPIN);
-	pwm_set_gpio_level(BUZZPIN, 255 * 128);
-
-
-	// for (int i = 0; i < 255; i++) {
-	// 	pwm_set_gpio_level(BUZZPIN, i*i);
-
-	// 	sleep_ms(10);
-	// 	if (i == 250){
-	// 		i = 0;
-	// 	}
-	// }
-
-	// uint slice_num = pwm_gpio_to_slice_num(BUZZPIN);
-	// pwm_set_wrap(slice_num, 3);
-	// pwm_set_chan_level(slice_num, PWM_CHAN_A, 2);
-	// pwm_set_chan_level(slice_num, PWM_CHAN_B, 2);
-	// pwm_set_enabled(slice_num, true);
-
-
-	while (1) {
-	}
-
-	// sleep_ms(1000);
 	sendData("Bootup complete");
-	// sendData("Bootup complete");
-	// sendData("Bootup complete");
-	// send();
-	// send();
-	// send();
-
-
 
 	while (true) {
 		std::string data1 = std::to_string(millis());
-		if (millis() > 10 * 1000 && !landed && !flying) {
+		// if (millis() > 10 * 1000 && !landed && !flying) {
+		if (landtime == 0 && millis() > 10 * 1000) {
+			sleep_ms(100);
 			continue;
 		}
-		if (!ready) {
-			continue;
-		}
+		// if (!ready) {
+		// 	continue;
+		// }
 		// for (int i = 0; i < 3; i++) {
-		data1 = data1.append(data);
+
+		// mtx.lock();
+
+		uint32_t owner_out;
+		if (mutex_try_enter(&my_mutex, &owner_out)) {
+			data1 = data1.append(data);
+			mutex_exit(&my_mutex);
+		} else {
+			// sleep_ms(10);
+		}
+		// mtx.unlock();
 		char* x = (char*)data1.c_str();
 		// Serial.println(x);
-		sendData(x);
+		// sendData(x);
 	}
 	// while (true) {
 	// 	// std::string data1 = std::to_string(millis());

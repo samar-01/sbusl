@@ -1,4 +1,5 @@
 #include "sense.h"
+#include <format>
 // #include <string>
 
 float seaLevel = 1007;
@@ -10,20 +11,19 @@ Adafruit_SGP30 sgp;
 Adafruit_INA219 ina219;
 
 
-#include <format>
 std::string tostr(float x) {
 	// fmt::format
 	return std::format("{:.3f}", x);
 }
 
-void curinit(){
+void curinit() {
 	ina219.begin();
 }
 
-float getcur(){
+float getcur() {
 	return ina219.getCurrent_mA();
 }
-float getv(){
+float getv() {
 	return ina219.getBusVoltage_V();
 }
 
@@ -275,7 +275,7 @@ void acc1init() {
 	}
 }
 
-void test0acc() {
+void testacc0() {
 	sensors_event_t accel;
 	sensors_event_t gyro;
 	sensors_event_t temp;
