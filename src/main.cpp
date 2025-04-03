@@ -273,22 +273,24 @@ int main() {
 
 		#ifdef ACC
 		std::vector<float> acc0 = getAccArr0();
+		uint32_t acctime = millis();
+
 		float g0 = norm(acc0) / 9.8;
 
 		if (max(g0, maxG0) == g0) {
 			maxG0 = g0;
 		}
 		if (!flying && g0 > 2 && flightStart == 0) {
-			flightStart = millis();
+			flightStart = acctime;
 		}
 		if (landed && g0 > 2 && landtime == 0) {
-			landtime = millis();
+			landtime = acctime;
 			#ifdef ALT
 			landspeed = speed;
 			#endif
 		}
 
-		if (!flying && flightStart != 0 && millis() - flightStart > 10000) {
+		if (!flying && flightStart != 0 && acctime - flightStart > 10000) {
 			flightStart = 0;
 		}
 
@@ -296,13 +298,16 @@ int main() {
 		for (int i = 0; i < tgsplit; i++) {
 			// gtimes.push_back(0);
 			float gx = (maxtg - mintg) / (tgsplit - 1) * i + mintg;
-			if (g0 > gx && gtimes.at(i) != 0) {
-				gtimes.at(i) = millis();
-			} else {
-				float t = millis() - gtimes.at(i);
-				if (t > 32 * pow(gx, -0.261)) {
+			if (g0 > gx) {
+				if (gtimes.at(i) == 0) {
+					gtimes.at(i) = acctime;
+				}
+				float t = acctime - gtimes.at(i);
+				if (t/1000 > 32 * pow(gx, -0.261)) {
 					survived = false;
 				}
+			} else {
+				gtimes.at(i) = 0;
 			}
 		}
 		#endif
@@ -409,11 +414,11 @@ int main() {
 		// sleep_ms(500);
 		sd1::open(i / 10);
 		// sd1::open();
-		// if (landed) {
-		// 	sd1::write1(std::to_string(flightStart).append(data));
-		// } else {
-		sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(landtime-flightStart)).append(data));
-		// }
+		if (landed) {
+			sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(0)).append(data));
+		} else {
+			sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(landtime - flightStart)).append(data));
+		}
 		// sd1::finish();
 
 		Serial.println(millis() - a);
