@@ -1,6 +1,6 @@
-// #define AIR
+#define AIR
 #define ACC
-// #define ACC2
+#define ACC2
 #define ALT
 #define CUR
 #define RADIO
@@ -62,7 +62,7 @@ float charge = 0;
 std::vector<uint32_t> gtimes;
 float mintg = 5;
 float maxtg = 30;
-float tgsplit = 20;
+float tgsplit = 50;
 bool survived = true;
 // #endif
 
@@ -108,11 +108,31 @@ void error() {
 	}
 }
 
+std::string errorstring;
+void senderror() {
+	while (1) {
+		sendData((char*)errorstring.c_str());
+	}
+}
+
+void error(std::string s) {
+	errorstring = s;
+	auto S = (char*)s.c_str();
+	multicore_launch_core1(senderror);
+	while (1) {
+		pwm_set_gpio_level(BUZZPIN, 255 * 128);
+		sleep_ms(100);
+		pwm_set_gpio_level(BUZZPIN, 0);
+		sleep_ms(100);
+		Serial.println(S);
+	}
+}
+
+
 int main() {
 	// sd();
 	// while (1) {}
 	stdio_init_all();
-	multicore_launch_core1(core2);
 	pwm_set_gpio_level(BUZZPIN, 0);
 	pwm_init_pin(LEDPIN);
 	// pwm_set_gpio_level(LEDPIN, 255 * 10);
@@ -187,7 +207,8 @@ int main() {
 	float g0 = norm(acc0) / 9.8;
 	if (g0 < 0.5 || g0 > 1.5) {
 		sendData("ACC 1 Fail");
-		error();
+		// error();
+		error("ACC 1 Fail");
 	}
 	for (int i = 0; i < tgsplit; i++) {
 		gtimes.push_back(0);
@@ -200,7 +221,7 @@ int main() {
 	float g1 = norm(acc1) / 9.8;
 	if (g1 < 0.5 || g1 > 1.5) {
 		sendData("ACC 2 Fail");
-		error();
+		error("ACC 2 Fail");
 	}
 	#endif
 
@@ -209,7 +230,7 @@ int main() {
 	float px = getPressure();
 	if (px > 1500 || px < 500) {
 		sendData("Alt Fail");
-		error();
+		error("Alt Fail");
 	}
 	#endif
 
@@ -219,6 +240,7 @@ int main() {
 	pwm_set_gpio_level(BUZZPIN, 255 * 128);
 	sleep_ms(300);
 	pwm_set_gpio_level(BUZZPIN, 0);
+	multicore_launch_core1(core2);
 	int i = 0;
 	while (true) {
 		i++;
@@ -303,7 +325,7 @@ int main() {
 					gtimes.at(i) = acctime;
 				}
 				float t = acctime - gtimes.at(i);
-				if (t/1000 > 32 * pow(gx, -0.261)) {
+				if (t / 1000 > 32 * pow(gx, -0.261)) {
 					survived = false;
 				}
 			} else {
@@ -356,7 +378,7 @@ int main() {
 		data = data.append(tostr(g0));
 		data = data.append(",");
 		data = data.append(tostr(maxG0));
-		data = data.append("S:");
+		data = data.append(" S:");
 		std::string survive = "";
 		if (survived) {
 			survive.append("T");
