@@ -29,6 +29,7 @@ extern "C" {
 /* AX.25 does not define a maximum packet size */
 /* I set one here to keep things sensible */
 #define AX25_MAX_LEN (512)
+// #define AX25_MAX_LEN (1024)
 
 typedef enum
 {

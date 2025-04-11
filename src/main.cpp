@@ -1,7 +1,7 @@
-#define AIR
-#define ACC
-#define ACC2
-#define ALT
+// #define AIR
+// #define ACC
+// #define ACC2
+// #define ALT
 #define CUR
 #define RADIO
 #define SD
@@ -40,6 +40,7 @@ std::string datareal;
 bool ready = false;
 bool flying = false;
 uint32_t flightStart = 0;
+uint32_t landtime0 = 0;
 uint32_t landtime = 0;
 bool landed = false;
 float alt1 = 200; // TODO change
@@ -64,6 +65,7 @@ float mintg = 5;
 float maxtg = 30;
 float tgsplit = 50;
 bool survived = true;
+char realdatafr[215];
 // #endif
 
 void core2();
@@ -284,6 +286,7 @@ int main() {
 			// flightStart = millis();
 		} else if ((flying && alt < alt2) || millis() >= 1000 * 60 * 10) {
 			landed = true;
+			landtime0 = millis();
 		}
 		lastAlt = alt;
 		#endif
@@ -415,7 +418,32 @@ int main() {
 		data = data.append(tostr(volt));
 		#endif
 
+		data = data.append("!");
 		char* x = (char*)data.c_str();
+		// Serial.println(x);
+		// Serial.println(x);
+		// x[strlen(x)] = 0;
+
+		x[210] = 0;
+		// for (int asf = 0; asf < 215; asf++) {
+		// 	// realdatafr[asf] = x[asf];
+		// 	if (x[asf] == '!') {
+		// 		x[asf] = 0;
+		// 		break;
+		// 	}
+		// }
+
+
+		uint32_t owner_out;
+		if (mutex_try_enter(&my_mutex, &owner_out)) {
+			// data1 = data1.append(data);
+			strcpy(realdatafr, x);
+			mutex_exit(&my_mutex);
+			// sendData(x);
+		} else {
+			Serial.println("bruh1");
+			// sleep_ms(10);
+		}
 
 		// if (landed) {
 		ready = true;
@@ -423,16 +451,16 @@ int main() {
 		if (flightStart != 0) {
 			Serial.print(millis() - flightStart);
 		}
-		Serial.println(x);
+		// Serial.println(x);
 		// mtx.lock();
 
-		uint32_t owner_out;
-		if (mutex_try_enter(&my_mutex, &owner_out)) {
-			datareal = data;
-			mutex_exit(&my_mutex);
-		} else {
-			// sleep_ms(10);
-		}
+		// uint32_t owner_out;
+		// if (mutex_try_enter(&my_mutex, &owner_out)) {
+		// 	datareal = data;
+		// 	mutex_exit(&my_mutex);
+		// } else {
+		// 	// sleep_ms(10);
+		// }
 		// sleep_ms(500);
 		sd1::open(i / 10);
 		// sd1::open();
@@ -463,14 +491,18 @@ int incomingByte = 0;
 bool led = false;
 
 void core2() {
-	sendData("Bootup complete");
+	// sendData("Bootup complete");
 
 	while (true) {
-		std::string data1 = std::to_string(millis());
+		// Serial.println("asf");
+		// std::string data1 = std::to_string(millis());
+
 		// if (millis() > 10 * 1000 && !landed && !flying) {
-		if (landtime == 0 && millis() > 10 * 1000) {
-			sleep_ms(100);
-			continue;
+		if (millis() > 10 * 1000) {
+			if (landtime0 == 0 || landtime0 < millis() + 10*1000) {
+				// sleep_ms(100);
+				continue;
+			}
 		}
 		// if (!ready) {
 		// 	continue;
@@ -479,22 +511,39 @@ void core2() {
 
 		// mtx.lock();
 
+		// char [x = realdatafr;
+		// Serial.println((char*)realdatafr);
+		// sendData((char*)realdatafr);
 		uint32_t owner_out;
+		char x[215];
+		x[214] = 0;
 		if (mutex_try_enter(&my_mutex, &owner_out)) {
-			data1 = data1.append(data);
+			// data1 = data1.append(data);
+			strcpy(x, realdatafr);
 			mutex_exit(&my_mutex);
+			x[214] = 1;
+
 		} else {
-			// sleep_ms(10);
+			Serial.println("bruh");
+			continue;
+		}
+		if (x[214] != 0){
+			std::string sx(x);
+			char* x1 = (char*)sx.c_str();
+			Serial.println(x1);
+
+			// char xsend[215];
+			// memcpy(xsend, x1, 215);
+			sendData(x1);
 		}
 		// mtx.unlock();
-		char* x = (char*)data1.c_str();
-		// Serial.println(x);
-		// sendData(x);
+		sleep_ms(100);
 	}
 	// while (true) {
 	// 	// std::string data1 = std::to_string(millis());
 	// 	// data1 = data1.append(" Test");
 	// 	// char* x = (char*)data1.c_str();
+
 	// 	// Serial.println(x);
 	// 	// sendData(x);
 	// 	// if (ready){
