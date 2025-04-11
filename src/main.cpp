@@ -1,7 +1,7 @@
 // #define AIR
-// #define ACC
-// #define ACC2
-// #define ALT
+#define ACC
+#define ACC2
+#define ALT
 #define CUR
 #define RADIO
 #define SD
@@ -352,36 +352,44 @@ int main() {
 
 		ready = false;
 		data = "";
+		data = data.append(std::to_string((landtime - flightStart)/1000));
+		// data = data.append(std::to_string(110));
 		// data = data.append(datetime_str);
 		// data = data.append(std::to_string(millis()));
 		#ifdef ALT
-		data = data.append(" P:");
-		data = data.append(tostr(p));
+		// data = data.append(" P:");
+		// data = data.append(tostr(p));
+		// data = data.append(",");
+		// data = data.append(tostr(minP));
+		// data = data.append(",");
+		// data = data.append(tostr(seaLevel));
+
+		// data = data.append(" A:");
 		data = data.append(",");
-		data = data.append(tostr(minP));
-		data = data.append(",");
-		data = data.append(tostr(seaLevel));
-		data = data.append(" A:");
-		data = data.append(tostr(alt));
+		data = data.append(tostr((int)alt));
 		data = data.append(",");
 		data = data.append(tostr(maxAlt));
-		data = data.append(" V:");
-		data = data.append(tostr(speed));
 		data = data.append(",");
+		// data = data.append(" V:");
+		// data = data.append(tostr(speed));
+		// data = data.append(",");
 		data = data.append(tostr(landspeed));
 		data = data.append(",");
-		data = data.append(tostr(minspeed));
-		data = data.append(",");
+		// data = data.append(tostr(minspeed));
+		// data = data.append(",");
 		data = data.append(tostr(maxspeed));
+		data = data.append(",");
 		#endif
 		// data = data.append(" ");
 		#ifdef ACC
 		data = data.append(getAcc0());
-		data = data.append(" G0:");
+		// data = data.append(" G0:");
+		data = data.append(",");
 		data = data.append(tostr(g0));
 		data = data.append(",");
 		data = data.append(tostr(maxG0));
-		data = data.append(" S:");
+		// data = data.append(" S:");
+		data = data.append(",");
 		std::string survive = "";
 		if (survived) {
 			survive.append("T");
@@ -391,34 +399,40 @@ int main() {
 		data = data.append(survive);
 		#endif
 		#ifdef ACC2
-		data = data.append(getAcc1());
-		data = data.append(" G1:");
+		// data = data.append(getAcc1());
+		// data = data.append(" G1:");
+		data = data.append(",");
 		data = data.append(tostr(g1));
 		data = data.append(",");
 		data = data.append(tostr(maxG1));
 		#endif
 		#ifdef ALT
-		data = data.append(" T:");
-		data = data.append(tostr(temp));
+		// data = data.append(" T:");
+		data = data.append(",");
+		data = data.append(tostr((int)temp));
 		#endif
 
 		#ifdef AIR
 		// testair();
-		data = data.append(" C:");
+		// data = data.append(" C:");
+		data = data.append(",");
 		data = data.append(tostr(co2));
 		#endif
 
 		#ifdef CUR
 		charge -= (millis() - a) / 1000 * cur;
-		data = data.append(" I:");
+		// data = data.append(" I:");
+		data = data.append(",");
 		data = data.append(tostr(cur));
-		data = data.append(" C:");
+		// data = data.append(" C:");
+		data = data.append(",");
 		data = data.append(tostr(charge / (3600)));
-		data = data.append(" V:");
+		// data = data.append(" V:");
+		data = data.append(",");
 		data = data.append(tostr(volt));
 		#endif
 
-		data = data.append("!");
+		// data = data.append("!");
 		char* x = (char*)data.c_str();
 		// Serial.println(x);
 		// Serial.println(x);

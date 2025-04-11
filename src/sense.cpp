@@ -431,12 +431,15 @@ std::string getAcc0() {
 	sensors_event_t temp;
 	sox.getEvent(&accel, &gyro, &temp);
 
-	std::string x = " X0:";
+	// std::string x = " X0:";
+	std::string x = ",";
 
 	x.append(tostr(accel.acceleration.x * 2));
-	x.append(" Y0:");
+	// x.append(" Y0:");
+	x.append(",");
 	x.append(tostr(accel.acceleration.y * 2));
-	x.append(" Z0:");
+	// x.append(" Z0:");
+	x.append(",");
 	x.append(tostr(accel.acceleration.z * 2));
 
 	return x;
@@ -470,12 +473,15 @@ std::string getAcc1() {
 	sensors_event_t temp;
 	stem.getEvent(&accel, &gyro, &temp);
 
-	std::string x = " X1:";
+	// std::string x = " X1:";
+	std::string x = ",";
 
 	x.append(tostr(accel.acceleration.x * 2));
-	x.append(" Y1:");
+	// x.append(" Y1:");
+	x.append(",");
 	x.append(tostr(accel.acceleration.y * 2));
-	x.append(" Z1:");
+	// x.append(" Z1:");
+	x.append(",");
 	x.append(tostr(accel.acceleration.z * 2));
 
 	return x;

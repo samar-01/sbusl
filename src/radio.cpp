@@ -1,5 +1,6 @@
 #include "radio.h"
 #include "pico/stdlib.h"
+// #include "hardware/pwm.h"
 
 audio_buffer_pool_t* audio_buffer_pool;
 
@@ -25,7 +26,8 @@ void radioinit() {
 
 
 void sendData(const char* data) {
-	gpio_put(BUZZPIN, true);
+	// gpio_put(BUZZPIN, true);
+	// pwm_set_gpio_level(BUZZPIN, 255 * 128);
 	aprs_pico_sendAPRS(audio_buffer_pool,
 		"KE2FCJ-1",  // Source call sign
 		"APRS",   // Destination call sign
@@ -39,5 +41,6 @@ void sendData(const char* data) {
 		'/',        // APRS symbol table: Primary
 		'>',        // APRS symbol code:  Car
 		256u);      // Volume    (0 ... 256)
-	gpio_put(BUZZPIN, false);
+	// gpio_put(BUZZPIN, false);
+	// pwm_set_gpio_level(BUZZPIN, 0);
 }
