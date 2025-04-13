@@ -5,6 +5,7 @@
 #define CUR
 #define RADIO
 #define SD
+// #define DEBUG
 
 #include <string>
 #include <stdio.h>
@@ -12,8 +13,10 @@
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
-#include "hardware/rtc.h"
-#include "pico/util/datetime.h"
+// #include "pico/malloc.h"
+#include <malloc.h>
+// #include "hardware/rtc.h"
+// #include "pico/util/datetime.h"
 #include <vector>
 #include "hardware/pwm.h"
 // #include "pico/mutex.h"
@@ -36,6 +39,7 @@ auto_init_mutex(my_mutex);
 #endif
 
 std::string data;
+std::string sdata;
 std::string datareal;
 bool ready = false;
 bool flying = false;
@@ -56,14 +60,14 @@ float maxspeed = 0;
 float landspeed = 0;
 float maxG0 = 0;
 float maxG1 = 0;
-float co2 = 0;
+// float co2 = 0;
 float charge = 0;
 
 // #ifdef ACC2
 std::vector<uint32_t> gtimes;
 float mintg = 5;
 float maxtg = 30;
-float tgsplit = 50;
+float tgsplit = 20;
 bool survived = true;
 char realdatafr[215];
 // #endif
@@ -130,6 +134,11 @@ void error(std::string s) {
 	}
 }
 
+void mem(){
+	struct mallinfo mi = mallinfo();
+	printf("aloc %d\n", mi.uordblks);
+	printf("free %d\n", mi.fordblks);
+}
 
 int main() {
 	// sd();
@@ -320,10 +329,18 @@ int main() {
 		}
 
 
+		#endif
+		#ifdef ACC2
+		std::vector<float> acc1 = getAccArr1();
+		float g1 = norm(acc1) / 9.8;
+		if (max(g1, maxG1) == g1) {
+			maxG1 = g1;
+		}
+
 		for (int i = 0; i < tgsplit; i++) {
 			// gtimes.push_back(0);
 			float gx = (maxtg - mintg) / (tgsplit - 1) * i + mintg;
-			if (g0 > gx) {
+			if (g1 > gx) {
 				if (gtimes.at(i) == 0) {
 					gtimes.at(i) = acctime;
 				}
@@ -336,13 +353,6 @@ int main() {
 			}
 		}
 		#endif
-		#ifdef ACC2
-		std::vector<float> acc1 = getAccArr1();
-		float g1 = norm(acc1) / 9.8;
-		if (max(g1, maxG1) == g1) {
-			maxG1 = g1;
-		}
-		#endif
 
 		#ifdef AIR
 		// testair();
@@ -352,17 +362,20 @@ int main() {
 
 		ready = false;
 		data = "";
-		data = data.append(std::to_string((landtime - flightStart)/1000));
+		// sdata = "";
+		// sdata = sdata.append(std::to_string(millis()));
+		// sdata = sdata.append(",");
+		data = data.append(std::to_string((landtime - flightStart) / 1000));
 		// data = data.append(std::to_string(110));
 		// data = data.append(datetime_str);
 		// data = data.append(std::to_string(millis()));
 		#ifdef ALT
-		// data = data.append(" P:");
-		// data = data.append(tostr(p));
-		// data = data.append(",");
-		// data = data.append(tostr(minP));
-		// data = data.append(",");
-		// data = data.append(tostr(seaLevel));
+		// sdata = sdata.append(" P:");
+		// sdata = sdata.append(tostr(p));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(minP));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(seaLevel));
 
 		// data = data.append(" A:");
 		data = data.append(",");
@@ -379,37 +392,105 @@ int main() {
 		// data = data.append(",");
 		data = data.append(tostr(maxspeed));
 		data = data.append(",");
+
+		// sdata = sdata.append(" A:");
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr((int)alt));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(maxAlt));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(" V:");
+		// sdata = sdata.append(tostr(speed));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(landspeed));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(minspeed));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(maxspeed));
+		// sdata = sdata.append(",");
 		#endif
 		// data = data.append(" ");
 		#ifdef ACC
-		data = data.append(getAcc0());
+		// data = data.append(getAcc0());
 		// data = data.append(" G0:");
-		data = data.append(",");
+		// data = data.append(",");
 		data = data.append(tostr(g0));
 		data = data.append(",");
 		data = data.append(tostr(maxG0));
 		// data = data.append(" S:");
 		data = data.append(",");
-		std::string survive = "";
-		if (survived) {
-			survive.append("T");
-		} else {
-			survive.append("F");
-		}
-		data = data.append(survive);
+
+		// sdata = sdata.append(" G0:");
+		// sdata = sdata.append(getAccString(acc0));
+		// // data = data.append(" DG0:");
+		// // data = data.append(getAccString(acc0));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(g0));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(maxG0));
+		// sdata = sdata.append(",");
+
+
 		#endif
 		#ifdef ACC2
 		// data = data.append(getAcc1());
 		// data = data.append(" G1:");
-		data = data.append(",");
 		data = data.append(tostr(g1));
 		data = data.append(",");
 		data = data.append(tostr(maxG1));
+		data = data.append(",");
+
+		// std::string survive = "";
+		if (survived) {
+			// survive.append("T");
+			data = data.append("T");
+		} else {
+			data = data.append("F");
+			// survive.append("F");
+		}
+		data = data.append(",");
+
+
+		sdata = sdata.append(" G1:");
+		// std::to_string(acc0);
+		// Serial.println(acc1);
+
+		// for (float x: acc1){
+		// 	// sdata = sdata.append(tostr(x));
+		// 	// sdata = sdata.append(",");
+		// float xyz0 = acc1[0];
+		// float xyz1 = acc1[1];
+		// float xyz2 = acc1[2];
+		
+		// Serial.println(acc1[0]);
+		// Serial.println(acc1[1]);
+		// Serial.println(acc1[2]);
+		// }
+		// sdata = sdata.append(getAccString(acc1));
+		// sdata = sdata.append(tostr(xyz0));
+
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(g1));
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(maxG1));
+		// sdata = sdata.append(",");
+		// if (survived) {
+		// 	sdata = sdata.append("T");
+		// } else {
+		// 	sdata = sdata.append("F");
+		// }
+		// sdata = sdata.append(",");
+		//12952	12832
+		//3312	3432
+
+
 		#endif
 		#ifdef ALT
 		// data = data.append(" T:");
-		data = data.append(",");
 		data = data.append(tostr((int)temp));
+		data = data.append(",");
+		// sdata = sdata.append(tostr((int)temp));
+		// sdata = sdata.append(",");
 		#endif
 
 		#ifdef AIR
@@ -417,12 +498,13 @@ int main() {
 		// data = data.append(" C:");
 		data = data.append(",");
 		data = data.append(tostr(co2));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(co2));
 		#endif
 
 		#ifdef CUR
 		charge -= (millis() - a) / 1000 * cur;
 		// data = data.append(" I:");
-		data = data.append(",");
 		data = data.append(tostr(cur));
 		// data = data.append(" C:");
 		data = data.append(",");
@@ -430,6 +512,16 @@ int main() {
 		// data = data.append(" V:");
 		data = data.append(",");
 		data = data.append(tostr(volt));
+
+
+		// // data = data.append(" I:");
+		// sdata = sdata.append(tostr(cur));
+		// // data = data.append(" C:");
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(charge / (3600)));
+		// // data = data.append(" V:");
+		// sdata = sdata.append(",");
+		// sdata = sdata.append(tostr(volt));
 		#endif
 
 		// data = data.append("!");
@@ -455,16 +547,20 @@ int main() {
 			mutex_exit(&my_mutex);
 			// sendData(x);
 		} else {
+			#ifdef DEBUG
 			Serial.println("bruh1");
+			#endif
 			// sleep_ms(10);
 		}
 
 		// if (landed) {
 		ready = true;
 		// }
+		#ifdef DEBUG
 		if (flightStart != 0) {
 			Serial.print(millis() - flightStart);
 		}
+		#endif
 		// Serial.println(x);
 		// mtx.lock();
 
@@ -478,14 +574,52 @@ int main() {
 		// sleep_ms(500);
 		sd1::open(i / 10);
 		// sd1::open();
-		if (landed) {
-			sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(0)).append(data));
+		// if (landed) {
+		// 	sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(0)).append(data));
+		// } else {
+		// 	sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(landtime - flightStart)).append(data));
+		// }
+
+		sdata = data.append(std::to_string(millis()));
+		data = "";
+		sdata = sdata.append(tostr(p));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(minP));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(seaLevel));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(speed));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(minspeed));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(maxspeed));
+		sdata = sdata.append(",");
+		sdata = sdata.append(" G0:");
+		sdata = sdata.append(getAccString(acc0));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(g0));
+		sdata = sdata.append(",");
+		sdata = sdata.append(" G1:");
+		sdata = sdata.append(getAccString(acc1));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(g1));
+		sdata = sdata.append(",");
+		if (survived) {
+			sdata = sdata.append("T");
 		} else {
-			sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(landtime - flightStart)).append(data));
+			sdata = sdata.append("F");
 		}
+		// sdata = sdata.append(",");
+
+		Serial.println((char*)sdata.c_str());
+		sd1::write1(sdata);
+		mem();
+		// Serial.println((char*)data.c_str());
 		// sd1::finish();
 
+		#ifdef DEBUG
 		Serial.println(millis() - a);
+		#endif
 
 		// Serial.println("\nloop");
 	}
@@ -513,7 +647,7 @@ void core2() {
 
 		// if (millis() > 10 * 1000 && !landed && !flying) {
 		if (millis() > 10 * 1000) {
-			if (landtime0 == 0 || landtime0 < millis() + 10*1000) {
+			if (landtime0 == 0 || landtime0 < millis() + 20 * 1000) {
 				// sleep_ms(100);
 				continue;
 			}
@@ -538,17 +672,23 @@ void core2() {
 			x[214] = 1;
 
 		} else {
+			#ifdef DEBUG
 			Serial.println("bruh");
+			#endif
 			continue;
 		}
-		if (x[214] != 0){
+		if (x[214] != 0) {
 			std::string sx(x);
 			char* x1 = (char*)sx.c_str();
+
+			#ifdef DEBUG
 			Serial.println(x1);
+			#endif
 
 			// char xsend[215];
 			// memcpy(xsend, x1, 215);
-			sendData(x1);
+			// sendData(x1);
+			// TODO
 		}
 		// mtx.unlock();
 		sleep_ms(100);

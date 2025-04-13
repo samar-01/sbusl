@@ -445,6 +445,18 @@ std::string getAcc0() {
 	return x;
 }
 
+std::string getAccString(std::vector<float> acc){
+	std::string x = "";
+	x.append(tostr(acc[0]));
+	// x.append(" Y0:");
+	x.append(",");
+	x.append(tostr(acc[1]));
+	// x.append(" Z0:");
+	x.append(",");
+	x.append(tostr(acc[2]));
+	return x;
+}
+
 
 std::vector<float> getAccArr1() {
 	std::vector<float> dat;

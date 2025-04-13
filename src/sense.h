@@ -46,3 +46,4 @@ float getG1();
 std::string getAcc1();
 
 float getTempBMP();
+std::string getAccString(std::vector<float> acc);
