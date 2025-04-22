@@ -379,7 +379,7 @@ int main() {
 
 		// data = data.append(" A:");
 		data = data.append(",");
-		data = data.append(tostr((int)alt));
+		data = data.append(tostr(alt));
 		data = data.append(",");
 		data = data.append(tostr(maxAlt));
 		data = data.append(",");
@@ -451,7 +451,7 @@ int main() {
 		data = data.append(",");
 
 
-		sdata = sdata.append(" G1:");
+		// sdata = sdata.append(" G1:");
 		// std::to_string(acc0);
 		// Serial.println(acc1);
 
@@ -580,8 +580,9 @@ int main() {
 		// 	sd1::write1(std::to_string(millis() - flightStart).append(" ").append(std::to_string(landtime - flightStart)).append(data));
 		// }
 
-		sdata = data.append(std::to_string(millis()));
-		data = "";
+		sdata = data.append(",");
+		sdata = sdata.append(std::to_string(millis()));
+		sdata = sdata.append(",");
 		sdata = sdata.append(tostr(p));
 		sdata = sdata.append(",");
 		sdata = sdata.append(tostr(minP));
@@ -594,26 +595,31 @@ int main() {
 		sdata = sdata.append(",");
 		sdata = sdata.append(tostr(maxspeed));
 		sdata = sdata.append(",");
-		sdata = sdata.append(" G0:");
+		// sdata = sdata.append(" G0:");
 		sdata = sdata.append(getAccString(acc0));
 		sdata = sdata.append(",");
-		sdata = sdata.append(tostr(g0));
+		// sdata = sdata.append(tostr(g0));
+		// $data.$i$2:$i$1141
+		
 		sdata = sdata.append(",");
-		sdata = sdata.append(" G1:");
+		// sdata = sdata.append(" G1:");
 		sdata = sdata.append(getAccString(acc1));
 		sdata = sdata.append(",");
-		sdata = sdata.append(tostr(g1));
-		sdata = sdata.append(",");
-		if (survived) {
-			sdata = sdata.append("T");
-		} else {
-			sdata = sdata.append("F");
-		}
+		// sdata = sdata.append(tostr(g1));
+		// sdata = sdata.append(",");
+		// if (survived) {
+		// 	sdata = sdata.append("T");
+		// } else {
+		// 	sdata = sdata.append("F");
+		// }
 		// sdata = sdata.append(",");
 
+		#ifdef DEBUG
+		// Serial.println((char*)sdata.c_str());
+		mem();
+		#endif
 		Serial.println((char*)sdata.c_str());
 		sd1::write1(sdata);
-		mem();
 		// Serial.println((char*)data.c_str());
 		// sd1::finish();
 
@@ -687,7 +693,7 @@ void core2() {
 
 			// char xsend[215];
 			// memcpy(xsend, x1, 215);
-			// sendData(x1);
+			sendData(x1);
 			// TODO
 		}
 		// mtx.unlock();
