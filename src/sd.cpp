@@ -142,7 +142,7 @@ namespace sd1 {
 		fr = f_open(&fil, filename, FA_WRITE | FA_CREATE_ALWAYS);
 		if (fr != FR_OK) {
 			printf("ERROR: Could not open file (%d)\r\n", fr);
-			while (true);
+			// while (true);
 		}
 		// printf("opened\n");
 	}
@@ -164,7 +164,7 @@ namespace sd1 {
 			fr = f_open(&fil, x, FA_WRITE | FA_CREATE_ALWAYS);
 			if (fr != FR_OK) {
 				printf("ERROR: Could not open file (open) (%d)\r\n", fr);
-				while (true);
+				// while (true);
 			}
 			// printf("opened\n");
 		}
@@ -174,7 +174,7 @@ namespace sd1 {
 		if (ret < 0) {
 			printf("ERROR: Could not write to file (%d)\r\n", ret);
 			f_close(&fil);
-			while (true);
+			// while (true);
 		}
 	}
 	void finish() {
@@ -182,7 +182,7 @@ namespace sd1 {
 		fr = f_close(&fil);
 		if (fr != FR_OK) {
 			printf("ERROR: Could not close file (finish) (%d)\r\n", fr);
-			while (true);
+			// while (true);
 		}
 		// printf("closed");
 	}

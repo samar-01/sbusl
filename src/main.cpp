@@ -19,6 +19,8 @@
 // #include "pico/util/datetime.h"
 #include <vector>
 #include "hardware/pwm.h"
+
+#include <format>
 // #include "pico/mutex.h"
 // mutex mtx;
 
@@ -47,8 +49,8 @@ uint32_t flightStart = 0;
 uint32_t landtime0 = 0;
 uint32_t landtime = 0;
 bool landed = false;
-float alt1 = 200; // TODO change
-float alt2 = 100;
+float alt1 = 1.5; // TODO change
+float alt2 = 0.5;
 
 float minP = 0;
 float maxAlt = 0;
@@ -134,7 +136,7 @@ void error(std::string s) {
 	}
 }
 
-void mem(){
+void mem() {
 	struct mallinfo mi = mallinfo();
 	printf("aloc %d\n", mi.uordblks);
 	printf("free %d\n", mi.fordblks);
@@ -253,6 +255,8 @@ int main() {
 	pwm_set_gpio_level(BUZZPIN, 0);
 	multicore_launch_core1(core2);
 	int i = 0;
+	unsigned long lastms = millis();
+	unsigned long chargems = millis();
 	while (true) {
 		i++;
 		a = millis();
@@ -293,14 +297,19 @@ int main() {
 			Serial.println();
 			flying = true;
 			// flightStart = millis();
-		} else if ((flying && alt < alt2) || millis() >= 1000 * 60 * 10) {
-			landed = true;
+		} else if (flying && alt < alt2 && !landed) {
+			// } else if ((flying && alt < alt2) || millis() >= 1000 * 60 * 10) {
 			landtime0 = millis();
+			landed = true;
+
 		}
 		lastAlt = alt;
 		#endif
 
+
 		#ifdef CUR
+		lastms = chargems;
+		chargems = millis();
 		float cur = getcur();
 		float volt = getv();
 		#endif
@@ -365,7 +374,6 @@ int main() {
 		// sdata = "";
 		// sdata = sdata.append(std::to_string(millis()));
 		// sdata = sdata.append(",");
-		data = data.append(std::to_string((landtime - flightStart) / 1000));
 		// data = data.append(std::to_string(110));
 		// data = data.append(datetime_str);
 		// data = data.append(std::to_string(millis()));
@@ -378,9 +386,8 @@ int main() {
 		// sdata = sdata.append(tostr(seaLevel));
 
 		// data = data.append(" A:");
-		data = data.append(",");
-		data = data.append(tostr(alt));
-		data = data.append(",");
+		// data = data.append(",");
+
 		data = data.append(tostr(maxAlt));
 		data = data.append(",");
 		// data = data.append(" V:");
@@ -461,7 +468,7 @@ int main() {
 		// float xyz0 = acc1[0];
 		// float xyz1 = acc1[1];
 		// float xyz2 = acc1[2];
-		
+
 		// Serial.println(acc1[0]);
 		// Serial.println(acc1[1]);
 		// Serial.println(acc1[2]);
@@ -487,7 +494,10 @@ int main() {
 		#endif
 		#ifdef ALT
 		// data = data.append(" T:");
-		data = data.append(tostr((int)temp));
+		// data = data.append((int)temp);
+		// data = data.append(tostr((int)temp));
+		data = data.append(std::format("{:.1f}", temp));
+
 		data = data.append(",");
 		// sdata = sdata.append(tostr((int)temp));
 		// sdata = sdata.append(",");
@@ -503,16 +513,22 @@ int main() {
 		#endif
 
 		#ifdef CUR
-		charge -= (millis() - a) / 1000 * cur;
-		// data = data.append(" I:");
-		data = data.append(tostr(cur));
-		// data = data.append(" C:");
-		data = data.append(",");
-		data = data.append(tostr(charge / (3600)));
-		// data = data.append(" V:");
-		data = data.append(",");
-		data = data.append(tostr(volt));
 
+		// charge -= ((millis() - a)) * cur;
+		charge += ((chargems - lastms) * cur) / (1000 * 3600);
+		// data = data.append(" I:");
+		// data = data.append(tostr(cur));
+		// data = data.append(" C:");
+		// data = data.append(",C");
+		data = data.append(tostr(100 - (charge / 2.1)));
+		// data = data.append(" V:");
+		// data = data.append(",");
+		// data = data.append(tostr(volt));
+
+
+
+		data = data.append(",");
+		data = data.append(getAccString(acc1));
 
 		// // data = data.append(" I:");
 		// sdata = sdata.append(tostr(cur));
@@ -581,6 +597,12 @@ int main() {
 		// }
 
 		sdata = data.append(",");
+		// data.clear();
+		// free(&data);
+		sdata = sdata.append(std::to_string((landtime - flightStart) / 1000));
+		sdata = sdata.append(",");
+		sdata = sdata.append(tostr(alt));
+		sdata = sdata.append(",");
 		sdata = sdata.append(std::to_string(millis()));
 		sdata = sdata.append(",");
 		sdata = sdata.append(tostr(p));
@@ -600,11 +622,9 @@ int main() {
 		sdata = sdata.append(",");
 		// sdata = sdata.append(tostr(g0));
 		// $data.$i$2:$i$1141
-		
-		sdata = sdata.append(",");
+
+		// sdata = sdata.append(",");
 		// sdata = sdata.append(" G1:");
-		sdata = sdata.append(getAccString(acc1));
-		sdata = sdata.append(",");
 		// sdata = sdata.append(tostr(g1));
 		// sdata = sdata.append(",");
 		// if (survived) {
@@ -627,7 +647,16 @@ int main() {
 		Serial.println(millis() - a);
 		#endif
 
-		// Serial.println("\nloop");
+		// // Serial.println("\nloop");
+		// if (landed) {
+		// 	// Serial.println("landed");
+		// 	// Serial.println(landtime0);
+		// }
+
+		// if (!landed) {
+
+		// 	Serial.println(alt);
+		// }
 	}
 	sd1::finish();
 
@@ -644,6 +673,7 @@ int main() {
 int incomingByte = 0;
 bool led = false;
 
+bool something = false;
 void core2() {
 	// sendData("Bootup complete");
 
@@ -652,12 +682,31 @@ void core2() {
 		// std::string data1 = std::to_string(millis());
 
 		// if (millis() > 10 * 1000 && !landed && !flying) {
-		if (millis() > 10 * 1000) {
-			if (landtime0 == 0 || landtime0 < millis() + 20 * 1000) {
-				// sleep_ms(100);
-				continue;
-			}
+		// Serial.println(landtime0);
+		// if (landtime0 < millis()+1000) {
+		// 	if (millis() > 1000*3){
+	
+		// 		continue;
+		// 	}
+
+		// }
+
+		if (landed && !something){
+			something = true;
+			sleep_ms(20*1000);	
 		}
+
+		if (!(something || millis() < 10*1000)){
+			continue;
+		}
+
+			// if (millis() > 10 * 1000) {
+				// if (!landed) {
+				// if (landtime0 == 0 || landtime0 < millis() + 20 * 1000) {
+					// sleep_ms(100);
+				// continue;
+				// }
+			// }
 		// if (!ready) {
 		// 	continue;
 		// }
