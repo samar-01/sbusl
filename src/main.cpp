@@ -49,8 +49,8 @@ uint32_t flightStart = 0;
 uint32_t landtime0 = 0;
 uint32_t landtime = 0;
 bool landed = false;
-float alt1 = 1.5; // TODO change
-float alt2 = 0.5;
+float alt1 = 200; // TODO change
+float alt2 = 100;
 
 float minP = 0;
 float maxAlt = 0;
